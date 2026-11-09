@@ -1,0 +1,86 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>台韓法人買賣超</title>
+<style>
+/* Layout: single reading column — header strip, the daily image, then source log and method notes */
+:root {
+  --bg: #f6f7f9; --panel: #ffffff; --fg: #1f2328; --muted: #5f6872; --line: #d9dee4; --accent: #3b6ea8; --neg: #c62828;
+  --font: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #15181c; --panel: #1d2126; --fg: #e6e9ed; --muted: #9aa4af; --line: #313840; --accent: #7aa7da; --neg: #ef6b6b; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #15181c; --panel: #1d2126; --fg: #e6e9ed; --muted: #9aa4af; --line: #313840; --accent: #7aa7da; --neg: #ef6b6b; color-scheme: dark }
+body { background: var(--bg); color: var(--fg); font-family: var(--font); line-height: 1.6; }
+.wrap { max-width: 980px; margin: 0 auto; padding-inline: 16px; padding-block: 28px 48px; display: grid; gap: 22px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+h1 { font-size: 1.6rem; margin: 0; text-wrap: balance; }
+.stamp { color: var(--muted); font-variant-numeric: tabular-nums; }
+.stamp b { color: var(--fg); }
+.sheet { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+.sheet img { display: block; width: 100%; height: auto; }
+h2 { font-size: 1.05rem; margin: 0 0 8px; }
+section { min-width: 0; }
+.tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: 6px; background: var(--panel); }
+table { border-collapse: collapse; width: 100%; font-size: 0.85rem; font-variant-numeric: tabular-nums; }
+th, td { padding: 7px 10px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 600; white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+td.num { text-align: right; white-space: nowrap; }
+.neg { color: var(--neg); }
+ul { margin: 0; padding-left: 1.2em; color: var(--fg); max-width: 70ch; }
+li + li { margin-top: 4px; }
+.muted { color: var(--muted); }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>台韓法人買賣超</h1>
+    <div class="stamp">資料截至 <b id="asof">2026-10-19</b></div>
+  </header>
+
+  <div class="sheet"><img src="latest.png" alt="三大法人買賣超表格與台灣、韓國外資每日買賣超長條圖"></div>
+
+  <section>
+    <h2>最近更新紀錄</h2>
+    <div class="tbl"><table id="log"><thead><tr><th>日期</th><th>市場</th><th>欄位</th><th class="num">數值</th><th>單位</th><th>來源</th><th>備註</th></tr></thead><tbody><tr><td colspan="7" class="muted">載入中…</td></tr></tbody></table></div>
+  </section>
+
+  <section>
+    <h2>口徑說明</h2>
+    <ul>
+      <li>台灣：證交所上市三大法人買賣超（新台幣百萬元）。外資 = 外資及陸資（不含外資自營商）；自營商含自行買賣與避險。</li>
+      <li>韓國：2026/10/6 起採韓國媒體報導的 KOSPI 外資買賣超（韓元），除以當日 15:30 美元兌韓元收盤匯率，取整到 US$10mn。之前為原始歷史資料，口徑可能含 NXT，大額日約大 1 成。</li>
+      <li>任一市場休市顯示「休市」；有開盤但數字未經兩個來源核實則留空，顯示「尚未公布」，不做估計。</li>
+      <li>資料檔：data/tw_flows.csv、data/kr_flows.csv、data/update_log.csv；繪圖腳本 data/flow_table.py。</li>
+    </ul>
+  </section>
+</div>
+
+<script>
+(async () => {
+  const body = document.querySelector('#log tbody');
+  try {
+    const txt = await (await fetch('data/update_log.csv', { cache: 'no-store' })).text();
+    const lines = txt.trim().split(/\r?\n/).slice(1).filter(Boolean);
+    const rows = lines.map(l => l.split(',')).reverse().slice(0, 12);
+    if (rows.length) document.getElementById('asof').textContent = rows[0][0];
+    body.innerHTML = '';
+    for (const r of rows) {
+      const [d, m, f, v, u, s, ...note] = r;
+      const tr = document.createElement('tr');
+      const cells = [d, m, f, v, u, s, note.join(',')];
+      cells.forEach((c, i) => {
+        const td = document.createElement('td');
+        td.textContent = c ?? '';
+        if (i === 3) { td.className = 'num'; if (/^-/.test(c)) td.classList.add('neg'); }
+        tr.appendChild(td);
+      });
+      body.appendChild(tr);
+    }
+  } catch (e) {
+    body.innerHTML = '<tr><td colspan="7" class="muted">更新紀錄暫時無法載入，請重新整理頁面。</td></tr>';
+  }
+})();
+</script>
+
+</body></html>
